@@ -1,0 +1,6 @@
+.project
+.pydevproject
+.settings
+src
+*.pyc
+conf_local.py
