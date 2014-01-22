@@ -4,8 +4,18 @@ import win32serviceutil
 import win32service
 import win32event
 import servicemanager
+import logging
+import os
 import conf
 from run import main as run_main
+
+PROJECT_DIR = os.path.dirname(__file__)
+
+logging.basicConfig(
+            filename=os.path.join(PROJECT_DIR, 'export_pg.log'), 
+            level=logging.DEBUG,
+            format='%(asctime)s - %(levelname)s - %(message)s'
+        )
  
 class AppServerSvc (win32serviceutil.ServiceFramework):
     _svc_name_ = "PostJSONService"

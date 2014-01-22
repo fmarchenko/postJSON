@@ -9,13 +9,22 @@ __maintainer__ = "Fedor Marchenko"
 __email__ = "me@fmarchenko.ru"
 __status__ = "Production"
 
-import sys
+import sys, os
 import conf
 import psycopg2
 import json
 import time, logging, datetime
+import urllib
 import urllib2
 
+
+PROJECT_DIR = os.path.dirname(__file__)
+
+logging.basicConfig(
+    filename=os.path.join(PROJECT_DIR, 'export_pg.log'), 
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 dthandler = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime)  or isinstance(obj, datetime.date) else None
 
@@ -33,21 +42,29 @@ def main(args):
     conn = psycopg2.connect(database=DATABASE, user=USER, 
         password=PASSWORD, host=HOST, port=PORT)
     cur = conn.cursor()
-    res = []
+    res = {}
     
     for key, query in queries.items():
         start = time.time()
         cur.execute(query)
-        res.append({key: cur.fetchall()})
+        headers = map(lambda x: x[0], cur.description)
+        id_index = headers.index(u'id')
+        del headers[id_index]
+        result = {ob[id_index]: dict(zip(headers, ob)) for ob in cur.fetchall()}
+        res.update({key: result})
         end = time.time()
         logging.info(u'Total time: %0.3f for %s' % ((end - start, query)))
         
     json_result = json.dumps(res, default=dthandler)
-
-    request = urllib2.Request(URL, json_result, {'Content-Type': 'application/json'})
-    f = urllib2.urlopen(request)
-#    response = f.read()
-#    f.close()
+    clen = len(json_result)
+    
+    request = urllib2.Request(URL, json_result, {'Content-Type': 'application/json', 'Content-Length': clen})
+    try:
+        f = urllib2.urlopen(request)
+        response = f.read()
+        f.close()
+    except urllib2.HTTPError as er:
+        logging.error(er)
 
     logging.info(u'Total time script: %0.3f' % (time.time() - start_script))
     cur.close()

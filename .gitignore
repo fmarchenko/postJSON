@@ -3,4 +3,6 @@
 .settings
 src
 *.pyc
+*.json
+*.log
 conf_local.py
