@@ -16,3 +16,10 @@ Run
 service.py --startup=auto install
 service.py start
 ```
+
+Debug
+--
+To debug a script, use the command:
+```sh
+python run.py
+```

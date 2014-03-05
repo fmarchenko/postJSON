@@ -26,7 +26,7 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-dthandler = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime)  or isinstance(obj, datetime.date) else None
+dthandler = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) or isinstance(obj, datetime.date) else None
 
 DATABASE = getattr(conf, 'DATABASE', None)
 USER = getattr(conf, 'USER', None)
@@ -38,37 +38,41 @@ queries = getattr(conf, 'queries', None)
         
 
 def main(args):
-    start_script = time.time()
-    conn = psycopg2.connect(database=DATABASE, user=USER, 
-        password=PASSWORD, host=HOST, port=PORT)
-    cur = conn.cursor()
-    res = {}
-    
-    for key, query in queries.items():
-        start = time.time()
-        cur.execute(query)
-        headers = map(lambda x: x[0], cur.description)
-        id_index = headers.index(u'id')
-        del headers[id_index]
-        result = {ob[id_index]: dict(zip(headers, ob)) for ob in cur.fetchall()}
-        res.update({key: result})
-        end = time.time()
-        logging.info(u'Total time: %0.3f for %s' % ((end - start, query)))
-        
-    json_result = json.dumps(res, default=dthandler)
-    clen = len(json_result)
-    
-    request = urllib2.Request(URL, json_result, {'Content-Type': 'application/json', 'Content-Length': clen})
     try:
-        f = urllib2.urlopen(request)
-        response = f.read()
-        f.close()
-    except urllib2.HTTPError as er:
-        logging.error(er)
-
-    logging.info(u'Total time script: %0.3f' % (time.time() - start_script))
-    cur.close()
-    conn.close()
+        start_script = time.time()
+        conn = psycopg2.connect(database=DATABASE, user=USER, 
+            password=PASSWORD, host=HOST, port=PORT)
+        logging.debug(u'Connect to database: %s:%s. OK.' % (HOST, PORT))
+        cur = conn.cursor()
+        res = {}
+        
+        for key, query in queries.items():
+            start = time.time()
+            cur.execute(query)
+            headers = map(lambda x: x[0], cur.description)
+            id_index = headers.index(u'id')
+            del headers[id_index]
+            result = {ob[id_index]: dict(zip(headers, ob)) for ob in cur.fetchall()}
+            res.update({key: result})
+            end = time.time()
+            logging.info(u'Total time: %0.3f. Result rows: %s. For %s' % ((end - start), cur.rowcount, query))
+            
+        json_result = json.dumps(res, default=dthandler)
+        clen = len(json_result)
+        
+        request = urllib2.Request(URL, json_result, {'Content-Type': 'application/json', 'Content-Length': clen})
+        try:
+            f = urllib2.urlopen(request)
+            response = f.read()
+            f.close()
+        except urllib2.HTTPError as er:
+            logging.error(er)
+    
+        logging.info(u'Total time script: %0.3f' % (time.time() - start_script))
+        cur.close()
+        conn.close()
+    except Exception as ex:
+        logging.error(str(ex).decode('utf-8'))
 
 
 if __name__ == '__main__':
