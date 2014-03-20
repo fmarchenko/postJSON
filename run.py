@@ -52,7 +52,7 @@ def main(args):
             headers = map(lambda x: x[0], cur.description)
             id_index = headers.index(u'id')
             del headers[id_index]
-            result = {ob[id_index]: dict(zip(headers, ob)) for ob in cur.fetchall()}
+            result = {ob[id_index]: dict(zip(headers, ob[1:])) for ob in cur.fetchall()}
             res.update({key: result})
             end = time.time()
             logging.info(u'Total time: %0.3f. Result rows: %s. For %s' % ((end - start), cur.rowcount, query))
