@@ -49,10 +49,10 @@ def main(args):
         for key, query in queries.items():
             start = time.time()
             cur.execute(query)
-            headers = map(lambda x: x[0], cur.description)
+            headers = map(lambda x: x[0].lower(), cur.description)
             id_index = headers.index(u'id')
-            del headers[id_index]
-            result = {ob[id_index]: dict(zip(headers, ob[1:])) for ob in cur.fetchall()}
+
+            result = {ob[id_index]: dict(zip(headers, ob)) for ob in cur.fetchall()}
             res.update({key: result})
             end = time.time()
             logging.info(u'Total time: %0.3f. Result rows: %s. For %s' % ((end - start), cur.rowcount, query))
@@ -72,7 +72,10 @@ def main(args):
         cur.close()
         conn.close()
     except Exception as ex:
-        logging.error(str(ex).decode('utf-8'))
+        try:
+            logging.error(str(ex).decode('utf-8'))
+        except:
+            logging.error(ex)
 
 
 if __name__ == '__main__':
