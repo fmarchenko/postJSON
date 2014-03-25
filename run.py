@@ -26,7 +26,7 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-dthandler = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) or isinstance(obj, datetime.date) else None
+dthandler = lambda obj: obj.isoformat() if isinstance(obj, (datetime.datetime, datetime.date, datetime.time)) else None
 
 DATABASE = getattr(conf, 'DATABASE', None)
 USER = getattr(conf, 'USER', None)
@@ -56,7 +56,7 @@ def main(args):
             res.update({key: result})
             end = time.time()
             logging.info(u'Total time: %0.3f. Result rows: %s. For %s' % ((end - start), cur.rowcount, query))
-            
+
         json_result = json.dumps(res, default=dthandler)
         clen = len(json_result)
         
